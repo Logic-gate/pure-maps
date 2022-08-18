@@ -1,0 +1,10 @@
+{
+  "attribution": {
+    "Plus Codes": "https://plus.codes/",
+    "© Google": "https://maps.google.com/pluscodes/terms/"
+  },
+  "_description": "Search using Google's Open Location Code(Plus Codes).",
+  "keys": ["PLUSCODE_APIKEY"],
+  "name": "Plus Codes",
+  "profiles": ["mixed", "online"]
+}

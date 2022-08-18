@@ -20,4 +20,7 @@ Keys = {
 
     # https://docs.stadiamaps.com/
     "STADIAMAPS_KEY": "",
+
+    # https://developers.google.com/maps/documentation/geocoding/intro
+    "PLUSCODES_APIKEY": "",
 }
