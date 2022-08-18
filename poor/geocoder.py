@@ -27,7 +27,7 @@ import sys
 import traceback
 
 from poor.i18n import _
-from poor.openlocationcode.openlocationcode import isFull as olc_isFull, isShort as olc_isShort, decode as olc_decode, isValid as olc_isValid, recoverNearest as olc_recoverNearest
+from poor.openlocationcode.openlocationcode import isFull as olc_isFull, decode as olc_decode, recoverNearest as olc_recoverNearest
 
 __all__ = ("Geocoder",)
 
@@ -103,19 +103,14 @@ class Geocoder:
         Fail Example: 857W+J3 Portofino, Metropolitan City of Genoa, Italy
         Since 'Portofino, Metropolitan City of Genoa, Italy' does not yield any
         results in Photon, an IndexError will be raised.
-
-        Passing x, y will make sure that even it fails, a result is shown.
-        Not the prettiest of solutions since the function is not returning the same
-        result(dict) given the exception.
-
-        except IndexError:
-            results = {'x': x, 'y':y}
+        
+        Will return None and pass it as the final return
+        to avoid any unwanted errors or misbehaviour 
         """
         try:
             results = self.geocode(query=ref_location)[0] 
         except IndexError:
-            #This is not called since adding poor.util.silent(Exception)
-            return dict(error=True, message=_("IndexError, no results"))
+            results = None
 
         return results
 
@@ -167,22 +162,34 @@ class Geocoder:
 
             # Parse if query is a Plus Code(Short Code)
             match = RE_PLUS_CODE_SHORT.search(qtrimmed)
+            """
+            For some reason, 857W+J3 Portofino, Metropolitan City of Genoa, Italy
+            and 857W+J3 Portofino, Italy
+            Does not match and raises:       
+                [W] unknown:93 - file:///usr/share/harbour-pure-maps/qml/MapErrorPage.qml:93:27: Unable to assign [undefined] to QString
+                [W] unknown:116 - file:///usr/share/harbour-pure-maps/qml/MapErrorPage.qml:116:36: Unable to assign QQuickAnchorLine to double
+                [W] unknown:0 - "Illegal point coordinates when read as QGeoCoordinate, point 0"
+            Even though C53X+C9X Cicagna, Metropolitan City of Genoa, Italy
+            Matches and fails gracfully. 
+            Might want to look into it. Might be getting matched elsewhere.
+            """
             if match is not None:
                 short_code = match.group().strip()
                 ref_location = qtrimmed.strip(short_code).strip()
                 with poor.util.silent(Exception):
                     #Is it okay if everything is under this????
                     results = self.parse_plus_code(ref_location)
-                    ref_lat = results['y']
-                    ref_lng = results['x']
-                    plus_code = olc_recoverNearest(short_code, ref_lat, ref_lng)
-                    latlng = olc_decode(plus_code).latlng()
-                    return [dict(title=plus_code.upper(),
-                                 description=_("Point from Plus code"),
-                                 x=latlng[1],
-                                 y=latlng[0],
-                                 distance=self._format_distance(x, y, latlng[1], latlng[0]),
-                                 provider=self.id)]
+                    if results is not None:
+                        ref_lat = results['y']
+                        ref_lng = results['x']
+                        plus_code = olc_recoverNearest(short_code, ref_lat, ref_lng)
+                        latlng = olc_decode(plus_code).latlng()
+                        return [dict(title=plus_code.upper(),
+                                     description=_("Point from Plus code"),
+                                     x=latlng[1],
+                                     y=latlng[0],
+                                     distance=self._format_distance(x, y, latlng[1], latlng[0]),
+                                     provider=self.id)]
 
 
         try:
